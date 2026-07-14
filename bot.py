@@ -1,104 +1,63 @@
 import os
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (
-    Application,
-    CommandHandler,
-    MessageHandler,
-    CallbackQueryHandler,
-    ContextTypes,
-    filters
-)
+import telebot
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-TOKEN = "YOUR_BOT_TOKEN"
-CHANNEL_ID = "YOUR_CHANNEL_ID"
-ADMIN_ID = 123456789
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHANNEL_ID = os.getenv("CHANNEL_ID")
+ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
-count = 0
-pending = {}
+bot = telebot.TeleBot(BOT_TOKEN)
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "ሰላም 👋\n"
-        "ሚስጥራዊ መልዕክትህን ላክ።"
+confession_number = 1
+pending_messages = {}
+
+@bot.message_handler(func=lambda message: message.chat.type == "private")
+def receive_confession(message):
+    global confession_number
+
+    if message.from_user.id == ADMIN_ID:
+        return
+
+    pending_messages[message.message_id] = message.text
+
+    keyboard = InlineKeyboardMarkup()
+    keyboard.add(
+        InlineKeyboardButton("✅ Approve", callback_data=f"approve:{message.message_id}"),
+        InlineKeyboardButton("❌ Reject", callback_data=f"reject:{message.message_id}")
     )
 
-async def receive_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global count
+    bot.send_message(
+        ADMIN_ID,
+        f"New confession:\n\n{message.text}",
+        reply_markup=keyboard
+    )@bot.callback_query_handler(func=lambda call: True)
+def callback(call):
+    global confession_number
 
-    user_message = update.message.text
-    user_id = update.message.from_user.id
+    action, message_id = call.data.split(":")
+    message_id = int(message_id)
 
-    pending[user_id] = user_message
-
-    keyboard = [
-        [
-            InlineKeyboardButton("✅ Approve", callback_data=f"approve_{user_id}"),
-            InlineKeyboardButton("❌ Reject", callback_data=f"reject_{user_id}")
-        ]
-    ]
-
-    await context.bot.send_message(
-        chat_id=ADMIN_ID,
-        text=f"አዲስ መልዕክት:\n\n{user_message}",
-        reply_markup=InlineKeyboardMarkup(keyboard)
-    )
-
-    await update.message.reply_text(
-        "መልዕክትህ ተቀብሏል። ማረጋገጫ እየጠበቀ ነው።"
-    )async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global count
-
-    query = update.callback_query
-    await query.answer()
-
-    data = query.data
-
-    action, user_id = data.split("_")
-    user_id = int(user_id)
+    if message_id not in pending_messages:
+        bot.answer_callback_query(call.id, "Message not found.")
+        return
 
     if action == "approve":
-        count += 1
-
-        message = pending.get(user_id)
-
-        if message:
-            await context.bot.send_message(
-                chat_id=CHANNEL_ID,
-                text=f"#{count}\n\n{message}"
-            )
-
-            del pending[user_id]
-
-            await query.edit_message_text(
-                "✅ Approved እና ወደ Channel ተለጠፈ።"
-            )
-
-    elif action == "reject":
-        if user_id in pending:
-            del pending[user_id]
-
-        await query.edit_message_text(
-            "❌ Rejected። አልተለጠፈም።"
+        text = f"#{confession_number}\n\n{pending_messages[message_id]}"
+        bot.send_message(CHANNEL_ID, text)
+        confession_number += 1
+        bot.edit_message_text(
+            "✅ Approved",
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id
+        )
+    else:
+        bot.edit_message_text(
+            "❌ Rejected",
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id
         )
 
-
-async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
-    print(f"Error: {context.error}")
-def main():
-    app = Application.builder().token(TOKEN).build()
-
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, receive_message)
-    )
-    app.add_handler(CallbackQueryHandler(button_handler))
-
-    app.add_error_handler(error_handler)
-
-    print("SMU Confession Bot Started")
-
-    app.run_polling()
-
-
-if __name__ == "__main__":
-    main()
+    del pending_messages[message_id]
+    bot.answer_callbackif __name__ == "__main__":
+    print("Bot is running...")
+    bot.infinity_polling(skip_pending=True)
