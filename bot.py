@@ -1,3 +1,4 @@
+)
 import os
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -11,10 +12,9 @@ bot = telebot.TeleBot(BOT_TOKEN)
 confession_number = 1
 pending_messages = {}
 
+
 @bot.message_handler(func=lambda message: message.chat.type == "private")
 def receive_confession(message):
-    global confession_number
-
     if message.from_user.id == ADMIN_ID:
         return
 
@@ -22,15 +22,24 @@ def receive_confession(message):
 
     keyboard = InlineKeyboardMarkup()
     keyboard.add(
-        InlineKeyboardButton("✅ Approve", callback_data=f"approve:{message.message_id}"),
-        InlineKeyboardButton("❌ Reject", callback_data=f"reject:{message.message_id}")
+        InlineKeyboardButton(
+            "✅ Approve",
+            callback_data=f"approve:{message.message_id}"
+        ),
+        InlineKeyboardButton(
+            "❌ Reject",
+            callback_data=f"reject:{message.message_id}"
+        )
     )
 
     bot.send_message(
         ADMIN_ID,
         f"New confession:\n\n{message.text}",
         reply_markup=keyboard
-    )@bot.callback_query_handler(func=lambda call: True)
+    )
+
+
+@bot.callback_query_handler(func=lambda call: True)
 def callback(call):
     global confession_number
 
@@ -45,11 +54,13 @@ def callback(call):
         text = f"#{confession_number}\n\n{pending_messages[message_id]}"
         bot.send_message(CHANNEL_ID, text)
         confession_number += 1
+
         bot.edit_message_text(
             "✅ Approved",
             chat_id=call.message.chat.id,
             message_id=call.message.message_id
         )
+
     else:
         bot.edit_message_text(
             "❌ Rejected",
@@ -58,7 +69,8 @@ def callback(call):
         )
 
     del pending_messages[message_id]
-bot.answer_callback_query(call.id)
+    bot.answer_callback_query(call.id)
+
 
 if __name__ == "__main__":
     print("Bot is running...")
