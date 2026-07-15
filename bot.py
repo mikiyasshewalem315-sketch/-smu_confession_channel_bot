@@ -1,4 +1,3 @@
-)
 import os
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -61,7 +60,7 @@ def callback(call):
             message_id=call.message.message_id
         )
 
-    else:
+    elif action == "reject":
         bot.edit_message_text(
             "❌ Rejected",
             chat_id=call.message.chat.id,
