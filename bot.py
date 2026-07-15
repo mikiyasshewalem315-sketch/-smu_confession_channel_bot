@@ -8,15 +8,29 @@ ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-confession_number = 1
+import json
+
 pending_messages = {}
+
+def load_confession_number():
+    try:
+        with open("number.txt", "r") as file:
+            return int(file.read())
+    except:
+        return 1
+
+def save_confession_number(number):
+    with open("number.txt", "w") as file:
+        file.write(str(number))
+
+confession_number = load_confession_number()
 
 @bot.message_handler(commands=['start'])
 def start(message):
     bot.send_message(
         message.chat.id,
-        "👋 እንኳን ወደ SMU Confession Bot በደህና መጡ!\n\n"
-        "📝 Confession ለመላክ መልእክትዎን ይጻፉ።\n"
+        "👋 እንኳን ወደ ቅድስተ ማርያም ዩኒቨርስቲ  Confession Bot በደህና መጡ!\n\n"
+        "📝 Confession መልእክትዎን ይጻፉ።\n"
         "🔒 ማንነትዎ አይታይም።"
     )
 
@@ -62,6 +76,7 @@ def callback(call):
         text = f"#{confession_number}\n\n{pending_messages[message_id]}"
         bot.send_message(CHANNEL_ID, text)
         confession_number += 1
+save_confession_number(confession_number)
 
         bot.edit_message_text(
             "✅ Approved",
