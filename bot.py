@@ -73,16 +73,16 @@ def callback(call):
         return
 
     if action == "approve":
-        text = f"#{confession_number}\n\n{pending_messages[message_id]}"
-        bot.send_message(CHANNEL_ID, text)
-        confession_number += 1
-save_confession_number(confession_number)
+    text = f"#{confession_number}\n\n{pending_messages[message_id]}"
+    bot.send_message(CHANNEL_ID, text)
+    confession_number += 1
+    save_confession_number(confession_number)
 
-        bot.edit_message_text(
-            "✅ Approved",
-            chat_id=call.message.chat.id,
-            message_id=call.message.message_id
-        )
+    bot.edit_message_text(
+        "✅ Approved",
+        chat_id=call.message.chat.id,
+        message_id=call.message.message_id
+    )
 
     elif action == "reject":
         bot.edit_message_text(
