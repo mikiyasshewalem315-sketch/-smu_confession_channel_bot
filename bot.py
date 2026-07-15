@@ -58,6 +58,8 @@ def callback(call):
         )
 
     del pending_messages[message_id]
-    bot.answer_callbackif __name__ == "__main__":
+bot.answer_callback_query(call.id)
+
+if __name__ == "__main__":
     print("Bot is running...")
     bot.infinity_polling(skip_pending=True)
