@@ -11,8 +11,17 @@ bot = telebot.TeleBot(BOT_TOKEN)
 confession_number = 1
 pending_messages = {}
 
+@bot.message_handler(commands=['start'])
+def start(message):
+    bot.send_message(
+        message.chat.id,
+        "👋 እንኳን ወደ SMU Confession Bot በደህና መጡ!\n\n"
+        "📝 Confession ለመላክ መልእክትዎን ይጻፉ።\n"
+        "🔒 ማንነትዎ አይታይም።"
+    )
 
-@bot.message_handler(func=lambda message: message.chat.type == "private")
+
+@bot.message_handler(func=lambda message: message.chat.type == "private" and not message.text.startswith("/"))
 def receive_confession(message):
     if message.from_user.id == ADMIN_ID:
         return
